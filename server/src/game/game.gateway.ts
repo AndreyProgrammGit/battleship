@@ -39,12 +39,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('placeShips')
   handlePlaceShips(@MessageBody() board: any, @ConnectedSocket() client: Socket) {
-    
+
     if (players.length >= 2) {
       players.splice(0, players.length);
       turnIndex = 0;
     }
-    
+
     let player = players.find(p => p.id === client.id);
     if (player) {
       player.board = board;
@@ -52,7 +52,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } else {
       players.push({ id: client.id, board, ready: true });
     }
-    
+
     console.log('players', players);
 
     client.emit('shipsPlacedAck', { status: 'ok' });
@@ -83,7 +83,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const targetPlayer = players[targetIndex];
     const shooterPlayer = players[shooterIndex];
-    
+
     if (!targetPlayer || !shooterPlayer) return;
 
     const cell = targetPlayer.board[data.y][data.x];
@@ -94,6 +94,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const hit = cell.ship;
     if (hit) {
       cell.hit = true;
+      const deltas = [-1, 0, 1];
+      for (let dy of deltas) {
+        for (let dx of deltas) {
+          const nx = data.x + dx;
+          const ny = data.y + dy;
+          if (
+            ny >= 0 &&
+            ny < 10 &&
+            nx >= 0 &&
+            nx < 10 &&
+            !(dx === 0 && dy === 0)
+          ) {
+            const neighbor = targetPlayer.board[ny][nx];
+            // Помечаем только пустые (не корабль, не попадание)
+            if (!neighbor.ship && !neighbor.hit && !neighbor.miss) {
+              neighbor.nearHit = true;
+            }
+          }
+        }
+      }
       // При попадании ход остается у стрелявшего
     } else {
       cell.miss = true;

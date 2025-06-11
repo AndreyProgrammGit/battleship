@@ -1,12 +1,10 @@
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
 import GameBoard from './components/GameBoard/GameBoard.jsx';
-import { setupSocketListeners } from './hooks/setupSocketListeners.js';
-import { removeShipAt, placeShip } from './components/Ship/Ship.js';
+import { setupSocketListeners } from './utils/setupSocketListeners.js';
+import { placeShip } from './utils/placeShip.js';
+import { removeShipAt } from './utils/removeShipAt.js';
 import Header from './components/Header/Header.jsx';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend'
-
 const createEmptyBoard = () =>
   Array(10)
     .fill(null)
@@ -95,17 +93,15 @@ function App() {
 
       {isReady && !opponentReady && <p>⏳ Ожидание соперника...</p>}
       {isReady && opponentReady && <p>🔥 Оба игрока готовы! Игра началась.</p>}
-
-      <DndProvider backend={HTML5Backend}>
         <div style={{ display: 'flex', gap: '40px', padding: '2rem', justifyContent: 'space-between' }}>
           <div>
             <h2>🛡️ Моя доска</h2>
             <GameBoard
               board={myBoard}
               isOpponent={false}
-              onCellClick={() => placeShip(rowAndCol, myBoard, currentShipSize, orientation, isPlacing, shipsToPlace, setMyBoard, setShipsToPlace, setCurrentShipSize, setIsPlacing)}
-              onRightClick={() => removeShipAt(rowAndCol, myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize)}
               getRowAndCol={getRowAndCol}
+              onCellClick={(row, col) => placeShip(row, col, myBoard, currentShipSize, orientation, isPlacing, shipsToPlace, setMyBoard, setShipsToPlace, setCurrentShipSize, setIsPlacing)}
+              onRightClick={(row, col,) => removeShipAt(row, col, myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize)}
             />
           </div>
           <div>
@@ -125,7 +121,6 @@ function App() {
             )}
           </div>
         </div>
-      </DndProvider>
     </div>
   );
 }

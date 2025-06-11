@@ -1,5 +1,7 @@
 .board {
   position: relative;
+  width: 320px;
+  height: 320px;
   display: grid;
   grid-template-columns: repeat(10, 30px);
   grid-template-rows: repeat(10, 30px);
@@ -24,4 +26,8 @@
 
 .cell.miss {
   background-color: lightblue;
+}
+
+.cell.near-hit {
+  background-color:grey;
 }
