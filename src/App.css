@@ -40,3 +40,13 @@
     transform: rotate(360deg);
   }
 }
+
+.ship-container {
+  margin-top: 25px;
+}
+
+.prompt-container {
+  position: absolute;
+  top: 45%;
+  left: 75px;
+}

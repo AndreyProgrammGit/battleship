@@ -31,3 +31,16 @@
 .cell.near-hit {
   background-color:grey;
 }
+
+.cell.hover-preview {
+  outline: 2px solid;
+  outline-offset: -2px;
+}
+
+.cell.hover-preview.valid {
+  outline-color: green;
+}
+
+.cell.hover-preview.invalid {
+  outline-color: red;
+}

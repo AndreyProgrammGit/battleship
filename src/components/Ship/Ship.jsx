@@ -1,29 +1,27 @@
-import { useDrag } from 'react-dnd';
+import './Ship.css';
 
-export default function Ship({ ship }) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'ship',
-    item: { id: ship.id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }));
-
-  const style = {
-    position: 'absolute',
-    top: ship.row * 32,
-    left: ship.col * 32,
-    display: 'flex',
-    flexDirection: ship.orientation === 'horizontal' ? 'row' : 'column',
-    opacity: isDragging ? 0.5 : 1,
-    cursor: 'move',
-  };
-
+export const ShipDock = ({ shipsToPlace, orientation }) => {
   return (
-    <div ref={drag} style={style}>
-      {Array.from({ length: ship.size }).map((_, idx) => (
-        <div key={idx} className="cell ship" />
-      ))}
+    <div className="ship-dock">
+      {Object.entries(shipsToPlace).map(([size, count]) =>
+        [...Array(count)].map((_, idx) => (
+          <div style={{margin: 10}}>
+            <div
+            key={`${size}-${idx}`}
+            className={`ship ${orientation}`}
+            draggable={true}
+            onDragStart={(e) => e.dataTransfer.setData('shipSize', size)}
+          >
+            {console.log('size', size)}
+            {Array(parseInt(size))
+              .fill(null)
+              .map((_, i) => (
+                <div key={i} className="ship-cell" />
+              ))}
+          </div>
+          </div>
+        ))
+      )}
     </div>
   );
-}
+};

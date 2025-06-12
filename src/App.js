@@ -5,6 +5,9 @@ import { setupSocketListeners } from './utils/setupSocketListeners.js';
 import { placeShip } from './utils/placeShip.js';
 import { removeShipAt } from './utils/removeShipAt.js';
 import Header from './components/Header/Header.jsx';
+import { ShipDock } from './components/Ship/Ship.jsx';
+import Prompt from './components/Prompt/Prompt.jsx';
+
 const createEmptyBoard = () =>
   Array(10)
     .fill(null)
@@ -36,8 +39,8 @@ function App() {
   const [playerRole, setPlayerRole] = useState(null);
   const [currentTurn, setCurrentTurn] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
-
-  const [rowAndCol, setColAndRow] = useState({ row: null, col: null });
+  const [showPrompt, setShowPrompt] = useState(true);
+  const [hoveredPlacement, setHoveredPlacement] = useState(null);
 
   const socketRef = useRef(null);
   const playerRoleRef = useRef(null);
@@ -73,44 +76,59 @@ function App() {
     socketRef.current.emit('fire', { x: col, y: row });
   };
 
-  const getRowAndCol = (row, col) => {
-    console.log('getRowAndCol', row, col);
-    setColAndRow({ row, col })
-  }
-
   return (
     <div className="App">
-      <Header currentShipSize={currentShipSize} shipsToPlace={shipsToPlace} orientation={orientation} setOrientation={setOrientation} setCurrentShipSize={setCurrentShipSize} />
+      <Header setMyBoard={setMyBoard} setShipsToPlace={setShipsToPlace} currentShipSize={currentShipSize} shipsToPlace={shipsToPlace} orientation={orientation} setOrientation={setOrientation} setCurrentShipSize={setCurrentShipSize} />
 
-        <div style={{ display: 'flex', gap: '40px', padding: '2rem', justifyContent: 'space-between' }}>
-          <div>
-            <h2>🛡️ Моя доска</h2>
-            <GameBoard
-              board={myBoard}
-              isOpponent={false}
-              getRowAndCol={getRowAndCol}
-              onCellClick={(row, col) => placeShip(row, col, myBoard, currentShipSize, orientation, isPlacing, shipsToPlace, setMyBoard, setShipsToPlace, setCurrentShipSize, setIsPlacing)}
-              onRightClick={(row, col,) => removeShipAt(row, col, myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize)}
-            />
-          </div>
-          <div>
-            <h2>🎯 Доска противника</h2>
-            {gameStarted ? (
-              <>
-                <GameBoard
-                  board={opponentBoard}
-                  isOpponent={true}
-                  onCellClick={handleOpponentCellClick}
-                />
-                <p>Сейчас ход: {currentTurn === playerRole ? 'твой' : 'противника'}</p>
-                {currentTurn === playerRole && <p>👆 Нажми на клетку, чтобы выстрелить</p>}
-              </>
-            ) : (
-              <p>Игра ещё не началась</p>
+      <div className="ship-container">
+       <ShipDock shipsToPlace={shipsToPlace} orientation={orientation} />
+      </div>
+
+      <div className="prompt-container">
+        {showPrompt && <Prompt />}
+      </div>
+
+      <div style={{ display: 'flex', gap: '40px', padding: '2rem', justifyContent: 'space-between' }}>
+        <div>
+          <h2>🛡️ Моя доска</h2>
+          <GameBoard
+            board={myBoard}
+            isOpponent={false}
+            setShowPrompt={setShowPrompt}
+            onCellClick={(row, col, size) => placeShip(row,
+              col,
+              myBoard,
+              size || currentShipSize,
+              orientation,
+              isPlacing,
+              shipsToPlace,
+              setMyBoard,
+              setShipsToPlace,
+              setCurrentShipSize,
+              setIsPlacing
+              
             )}
-          </div>
+            onRightClick={(row, col,) => removeShipAt(row, col, myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize)}
+          />
         </div>
-         {!isReady && !isPlacing && (
+        <div>
+          <h2>🎯 Доска противника</h2>
+          {gameStarted ? (
+            <>
+              <GameBoard
+                board={opponentBoard}
+                isOpponent={true}
+                onCellClick={handleOpponentCellClick}
+              />
+              <p>Сейчас ход: {currentTurn === playerRole ? 'твой' : 'противника'}</p>
+              {currentTurn === playerRole && <p>👆 Нажми на клетку, чтобы выстрелить</p>}
+            </>
+          ) : (
+            <p>Игра ещё не началась</p>
+          )}
+        </div>
+      </div>
+      {!isReady && !isPlacing && (
         <button className='ready' onClick={() => {
           socketRef.current.emit('placeShips', myBoard);
           setIsReady(true);
@@ -124,5 +142,4 @@ function App() {
     </div>
   );
 }
-
 export default App;
