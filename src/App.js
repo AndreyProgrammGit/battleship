@@ -82,17 +82,6 @@ function App() {
     <div className="App">
       <Header currentShipSize={currentShipSize} shipsToPlace={shipsToPlace} orientation={orientation} setOrientation={setOrientation} setCurrentShipSize={setCurrentShipSize} />
 
-      {!isReady && !isPlacing && (
-        <button onClick={() => {
-          socketRef.current.emit('placeShips', myBoard);
-          setIsReady(true);
-        }}>
-          ✅ Готов
-        </button>
-      )}
-
-      {isReady && !opponentReady && <p>⏳ Ожидание соперника...</p>}
-      {isReady && opponentReady && <p>🔥 Оба игрока готовы! Игра началась.</p>}
         <div style={{ display: 'flex', gap: '40px', padding: '2rem', justifyContent: 'space-between' }}>
           <div>
             <h2>🛡️ Моя доска</h2>
@@ -121,6 +110,17 @@ function App() {
             )}
           </div>
         </div>
+         {!isReady && !isPlacing && (
+        <button className='ready' onClick={() => {
+          socketRef.current.emit('placeShips', myBoard);
+          setIsReady(true);
+        }}>
+          Начать
+        </button>
+      )}
+
+      {isReady && !opponentReady && <p className='waiting_enemy'><span className='clock'>⏳</span> Ожидание соперника...</p>}
+      {isReady && opponentReady && <p>🔥 Оба игрока готовы! Игра началась.</p>}
     </div>
   );
 }
