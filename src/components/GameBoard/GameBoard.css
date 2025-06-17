@@ -32,15 +32,10 @@
   background-color:grey;
 }
 
-.cell.hover-preview {
-  outline: 2px solid;
-  outline-offset: -2px;
+.valid-hover {
+  background-color: rgba(0, 255, 0, 0.3); /* зелёная подсветка */
 }
 
-.cell.hover-preview.valid {
-  outline-color: green;
-}
-
-.cell.hover-preview.invalid {
-  outline-color: red;
+.invalid-hover {
+  background-color: rgba(255, 0, 0, 0.3); /* красная подсветка */
 }

@@ -33,17 +33,28 @@ function App() {
     2: 3,
     1: 4,
   });
-  const [orientation, setOrientation] = useState('horizontal');
+  const [isOrientation, setOrientation] = useState('horizontal');
   const [isReady, setIsReady] = useState(false);
   const [opponentReady, setOpponentReady] = useState(false);
   const [playerRole, setPlayerRole] = useState(null);
   const [currentTurn, setCurrentTurn] = useState(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [showPrompt, setShowPrompt] = useState(true);
-  const [hoveredPlacement, setHoveredPlacement] = useState(null);
-
+  const [hoveredCells, setHoveredCells] = useState([]);
+  const [isValidPlacement, setIsValidPlacement] = useState(null);
+  const [draggingShipData, setDraggingShipData] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [gameResult, setGameResult] = useState(null);
   const socketRef = useRef(null);
   const playerRoleRef = useRef(null);
+
+  const handleDragStartShip = (size, orientation) => {
+    setDraggingShipData({ size, orientation });
+  };
+
+  const handleDragEndShip = () => {
+    setDraggingShipData(null); // Очищаем данные, когда перетаскивание завершено
+  };
 
   useEffect(() => {
     playerRoleRef.current = playerRole;
@@ -52,7 +63,7 @@ function App() {
 
   useEffect(() => {
     console.log('App useEffect');
-    setupSocketListeners(socketRef, setOpponentReady, setPlayerRole, playerRoleRef, setCurrentTurn, setGameStarted, setOpponentBoard, setMyBoard)
+    setupSocketListeners(socketRef, setOpponentReady, setPlayerRole, playerRoleRef, setCurrentTurn, setGameStarted, setOpponentBoard, setMyBoard, setGameOver, setGameResult)
     return () => {
       socketRef.current?.disconnect();
     };
@@ -76,12 +87,33 @@ function App() {
     socketRef.current.emit('fire', { x: col, y: row });
   };
 
+  const handleHover = (row, col, size, orientation, calculatedIsValidPlacement) => {
+    const cells = [];
+
+    for (let i = 0; i < size; i++) {
+      const r = orientation === 'vertical' ? row + i : row;
+      const c = orientation === 'horizontal' ? col + i : col;
+
+      if (r >= 10 || c >= 10) {
+        setHoveredCells([]); // не помещается
+        setIsValidPlacement(false);
+        return;
+      }
+
+      cells.push([r, c]);
+    }
+
+    setHoveredCells(cells);
+    setIsValidPlacement(calculatedIsValidPlacement);
+  };
+
   return (
     <div className="App">
-      <Header setMyBoard={setMyBoard} setShipsToPlace={setShipsToPlace} currentShipSize={currentShipSize} shipsToPlace={shipsToPlace} orientation={orientation} setOrientation={setOrientation} setCurrentShipSize={setCurrentShipSize} />
+      <Header setMyBoard={setMyBoard} setShipsToPlace={setShipsToPlace} currentShipSize={currentShipSize} shipsToPlace={shipsToPlace} orientation={isOrientation} setOrientation={setOrientation} setCurrentShipSize={setCurrentShipSize} />
 
       <div className="ship-container">
-       <ShipDock shipsToPlace={shipsToPlace} orientation={orientation} />
+        <ShipDock shipsToPlace={shipsToPlace} orientation={isOrientation} onDragStartShip={handleDragStartShip}
+          onDragEndShip={handleDragEndShip} />
       </div>
 
       <div className="prompt-container">
@@ -95,7 +127,13 @@ function App() {
             board={myBoard}
             isOpponent={false}
             setShowPrompt={setShowPrompt}
-            onCellClick={(row, col, size) => placeShip(row,
+            hoveredCells={hoveredCells}
+            isValidPlacement={isValidPlacement}
+            setHoveredCells={setHoveredCells}
+            setIsValidPlacement={setIsValidPlacement}
+            onHover={handleHover}
+            draggingShipData={draggingShipData}
+            onCellClick={(row, col, size, orientation) => placeShip(row,
               col,
               myBoard,
               size || currentShipSize,
@@ -105,8 +143,8 @@ function App() {
               setMyBoard,
               setShipsToPlace,
               setCurrentShipSize,
-              setIsPlacing
-              
+              setIsPlacing,
+              isOrientation
             )}
             onRightClick={(row, col,) => removeShipAt(row, col, myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize)}
           />
@@ -125,6 +163,12 @@ function App() {
             </>
           ) : (
             <p>Игра ещё не началась</p>
+          )}
+
+          {gameOver && (
+            <div className="game-result">
+              {gameResult === 'win' ? '🎉 Победа!' : '💥 Поражение!'}
+            </div>
           )}
         </div>
       </div>

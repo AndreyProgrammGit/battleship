@@ -50,3 +50,17 @@
   top: 45%;
   left: 75px;
 }
+
+.game-result {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #222;
+  color: white;
+  font-size: 2rem;
+  padding: 1.5rem 3rem;
+  border-radius: 12px;
+  z-index: 999;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}

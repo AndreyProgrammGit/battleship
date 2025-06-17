@@ -9,7 +9,8 @@ export const placeShip = (
   setMyBoard,
   setShipsToPlace,
   setCurrentShipSize,
-  setIsPlacing
+  setIsPlacing,
+  isOrientation
 ) => {
   const shipSize = passedSize;
 
@@ -46,9 +47,9 @@ export const placeShip = (
     return true;
   };
 
-  if (!canPlaceShip(myBoard, row, col, shipSize, orientation)) return;
+  if (!canPlaceShip(myBoard, row, col, shipSize, isOrientation)) return;
 
-  const deltas = orientation === 'horizontal' ? [0, 1] : [1, 0];
+  const deltas = isOrientation === 'horizontal' ? [0, 1] : [1, 0];
   const updated = myBoard.map((r) => r.map((c) => ({ ...c })));
 
   for (let i = 0; i < shipSize; i++) {

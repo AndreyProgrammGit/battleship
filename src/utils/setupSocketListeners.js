@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-export const setupSocketListeners = (socketRef, setOpponentReady, setPlayerRole, playerRoleRef, setCurrentTurn, setGameStarted, setOpponentBoard, setMyBoard) => {
+export const setupSocketListeners = (socketRef, setOpponentReady, setPlayerRole, playerRoleRef, setCurrentTurn, setGameStarted, setOpponentBoard, setMyBoard, setGameOver, setGameResult) => {
 
     console.log('Setting up socket listeners');
 
@@ -35,5 +35,11 @@ export const setupSocketListeners = (socketRef, setOpponentReady, setPlayerRole,
         // Обновляем текущий ход
         setCurrentTurn(yourTurn ? playerRoleRef.current :
             (playerRoleRef.current === 'player1' ? 'player2' : 'player1'));
+    });
+
+      socketRef.current.on('gameOver', ({ winner }) => {
+        const player = playerRoleRef.current;
+        setGameOver(true);
+        setGameResult(winner === player ? 'win' : 'lose');
     });
 }

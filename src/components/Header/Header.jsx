@@ -17,8 +17,6 @@ const createEmptyBoard = () =>
 
 
 const Header = ({ setMyBoard, setShipsToPlace,currentShipSize, shipsToPlace, orientation, setOrientation, setCurrentShipSize }) => {
-  console.log(shipsToPlace)
-
   const flag = Object.values(shipsToPlace).every(key => key === 0);
 
   return (

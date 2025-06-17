@@ -7,6 +7,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
+import { isAllShipsSunk } from './utils/isAllShipSunk';
 
 interface PlayerState {
   id: string;
@@ -71,80 +72,86 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('fire')
-  handleFire(
-    @MessageBody() data: { x: number; y: number },
-    @ConnectedSocket() shooter: Socket,
-  ) {
-    const shooterIndex = players.findIndex((p) => p.id === shooter.id);
-    const targetIndex = 1 - shooterIndex;
+@SubscribeMessage('fire')
+handleFire(
+  @MessageBody() data: { x: number; y: number },
+  @ConnectedSocket() shooter: Socket,
+) {
+  const shooterIndex = players.findIndex((p) => p.id === shooter.id);
+  const targetIndex = 1 - shooterIndex;
 
-    if (shooterIndex === -1 || turnIndex !== shooterIndex) return;
+  if (shooterIndex === -1 || turnIndex !== shooterIndex) return;
 
-    const targetPlayer = players[targetIndex];
-    const shooterPlayer = players[shooterIndex];
+  const targetPlayer = players[targetIndex];
+  const shooterPlayer = players[shooterIndex];
 
-    if (!targetPlayer || !shooterPlayer) return;
+  if (!targetPlayer || !shooterPlayer) return;
 
-    const cell = targetPlayer.board[data.y][data.x];
+  const cell = targetPlayer.board[data.y][data.x];
+  if (cell.hit || cell.miss) return;
 
-    // Проверяем, не стреляли ли уже в эту клетку
-    if (cell.hit || cell.miss) return;
+  const hit = cell.ship;
+  if (hit) {
+    cell.hit = true;
 
-    const hit = cell.ship;
-    if (hit) {
-      cell.hit = true;
-      const deltas = [-1, 0, 1];
-      for (let dy of deltas) {
-        for (let dx of deltas) {
-          const nx = data.x + dx;
-          const ny = data.y + dy;
-          if (
-            ny >= 0 &&
-            ny < 10 &&
-            nx >= 0 &&
-            nx < 10 &&
-            !(dx === 0 && dy === 0)
-          ) {
-            const neighbor = targetPlayer.board[ny][nx];
-            // Помечаем только пустые (не корабль, не попадание)
-            if (!neighbor.ship && !neighbor.hit && !neighbor.miss) {
-              neighbor.nearHit = true;
-            }
+    // Отметка вокруг попадания (по желанию)
+    const deltas = [-1, 0, 1];
+    for (let dy of deltas) {
+      for (let dx of deltas) {
+        const nx = data.x + dx;
+        const ny = data.y + dy;
+        if (
+          ny >= 0 && ny < 10 &&
+          nx >= 0 && nx < 10 &&
+          !(dx === 0 && dy === 0)
+        ) {
+          const neighbor = targetPlayer.board[ny][nx];
+          if (!neighbor.ship && !neighbor.hit && !neighbor.miss) {
+            neighbor.nearHit = true;
           }
         }
       }
-      // При попадании ход остается у стрелявшего
-    } else {
-      cell.miss = true;
-      // При промахе ход переходит к противнику
-      turnIndex = targetIndex;
     }
 
-    const shooterSocket = this.clients.get(shooterPlayer.id);
-    const targetSocket = this.clients.get(targetPlayer.id);
+    // ✅ Проверка на конец игры
+    if (isAllShipsSunk(targetPlayer.board)) {
+      shooter.emit('gameOver', { winner: `player${shooterIndex + 1}` });
+      this.clients.get(targetPlayer.id)?.emit('gameOver', { winner: `player${shooterIndex + 1}` });
 
-    // Стрелявшему отправляем доску противника (обновленную)
-    shooterSocket?.emit('fireResult', {
-      x: data.x,
-      y: data.y,
-      hit,
-      board: targetPlayer.board,
-      yourTurn: turnIndex === shooterIndex,
-      isYourShot: true,
-    });
+      console.log(`Game Over. Winner: player${shooterIndex + 1}`);
+      players = [];
+      turnIndex = 0;
+      return;
+    }
 
-    // Цели отправляем его собственную доску (обновленную)
-    targetSocket?.emit('fireResult', {
-      x: data.x,
-      y: data.y,
-      hit,
-      board: targetPlayer.board,
-      yourTurn: turnIndex === targetIndex,
-      isYourShot: false,
-    });
-
-    console.log(`Shot at (${data.x}, ${data.y}): ${hit ? 'HIT' : 'MISS'}`);
-    console.log(`Turn now: player${turnIndex + 1}`);
+    // Попадание — ход остаётся у игрока
+  } else {
+    cell.miss = true;
+    turnIndex = targetIndex;
   }
+
+  const shooterSocket = this.clients.get(shooterPlayer.id);
+  const targetSocket = this.clients.get(targetPlayer.id);
+
+  shooterSocket?.emit('fireResult', {
+    x: data.x,
+    y: data.y,
+    hit,
+    board: targetPlayer.board,
+    yourTurn: turnIndex === shooterIndex,
+    isYourShot: true,
+  });
+
+  targetSocket?.emit('fireResult', {
+    x: data.x,
+    y: data.y,
+    hit,
+    board: targetPlayer.board,
+    yourTurn: turnIndex === targetIndex,
+    isYourShot: false,
+  });
+
+  console.log(`Shot at (${data.x}, ${data.y}): ${hit ? 'HIT' : 'MISS'}`);
+  console.log(`Turn now: player${turnIndex + 1}`);
+}
 }

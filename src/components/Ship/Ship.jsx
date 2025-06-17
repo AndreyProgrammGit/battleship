@@ -1,6 +1,6 @@
 import './Ship.css';
 
-export const ShipDock = ({ shipsToPlace, orientation }) => {
+export const ShipDock = ({ shipsToPlace, orientation, onDragStartShip, onDragEndShip}) => {
   return (
     <div className="ship-dock">
       {Object.entries(shipsToPlace).map(([size, count]) =>
@@ -10,9 +10,13 @@ export const ShipDock = ({ shipsToPlace, orientation }) => {
             key={`${size}-${idx}`}
             className={`ship ${orientation}`}
             draggable={true}
-            onDragStart={(e) => e.dataTransfer.setData('shipSize', size)}
+            onDragStart={(e) => {
+              e.dataTransfer.setData('shipSize', size); 
+              e.dataTransfer.setData('orientation', orientation)
+              onDragStartShip(parseInt(size), orientation)
+            }}
+            onDragEnd={onDragEndShip} 
           >
-            {console.log('size', size)}
             {Array(parseInt(size))
               .fill(null)
               .map((_, i) => (
