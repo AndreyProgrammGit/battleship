@@ -8,6 +8,16 @@
   gap: 2px;
 }
 
+
+h2 {
+  color: #D9D9D9;
+}
+
+p {
+  color: #D9D9D9
+}
+
+
 .cell {
   width: 30px;
   height: 30px;
@@ -29,13 +39,37 @@
 }
 
 .cell.near-hit {
-  background-color:grey;
+  background-color: grey;
 }
 
 .valid-hover {
-  background-color: rgba(0, 255, 0, 0.3); /* зелёная подсветка */
+  background-color: rgba(0, 255, 0, 0.3);
+  /* зелёная подсветка */
 }
 
 .invalid-hover {
-  background-color: rgba(255, 0, 0, 0.3); /* красная подсветка */
+  background-color: rgba(255, 0, 0, 0.3);
+  /* красная подсветка */
+}
+
+/* В GamePage.css или GameBoard.css */
+.random-placement-button {
+  margin-top: 20px;
+  /* Отступ сверху */
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.random-placement-button:hover {
+  background-color: #0056b3;
+}
+
+.random-placement-button:active {
+  background-color: #004085;
 }
