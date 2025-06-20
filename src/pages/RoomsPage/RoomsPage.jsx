@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { uid } from "uid";
 import styles from "./RoomsPage.module.css";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import { notifyRoomIsFull } from "../utils/toastNotify";
+import { toast, ToastContainer } from "react-toastify";
 
 const RoomsPage = ({ socket }) => {
   const [rooms, setRooms] = useState([]);
+  const location = useLocation();
   const navigate = useNavigate();
 
   const handleCreateRoom = () => {
@@ -13,11 +16,24 @@ const RoomsPage = ({ socket }) => {
 
   useEffect(() => {
     socket.emit("getRooms");
+
     socket.on("sendAllRooms", (data) => {
-      console.log("sendAllRooms", data);
+      console.log("Получены комнаты:", data);
       setRooms(data);
     });
+
+    return () => {
+      socket.off("sendAllRooms");
+    };
   }, [socket]);
+
+  useEffect(() => {
+    if (location.state && location.state.roomIsFull) {
+      console.log("error");
+      notifyRoomIsFull("Комната полная");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     if (!localStorage.getItem("user")) navigate("/");
@@ -42,7 +58,11 @@ const RoomsPage = ({ socket }) => {
           <ul className={styles.listContainer}>
             {rooms.map((item, index) => (
               <Link
-                style={{ textDecoration: "none", color: "black" }}
+                key={item.room}
+                style={{
+                  textDecoration: "none",
+                  color: "black",
+                }}
                 to={`/game/${item.room}`}
               >
                 {" "}
@@ -58,6 +78,7 @@ const RoomsPage = ({ socket }) => {
           </ul>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

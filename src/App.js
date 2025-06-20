@@ -1,5 +1,5 @@
 import "./App.css";
-import GamePage from "./pages/GamePage.jsx";
+import GamePage from "./pages/GamePage/GamePage.jsx";
 import { BrowserRouter, Routes, Route } from "react-router";
 import HomePage from "./pages/HomePage/HomePage.jsx";
 import RoomsPage from "./pages/RoomsPage/RoomsPage.jsx";

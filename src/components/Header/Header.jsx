@@ -33,10 +33,6 @@ const Header = ({
     setShowModal(true);
   };
 
-  useEffect(() => {
-    console.log("show modal in parent", showModal);
-  }, [showModal]);
-
   return (
     <div style={{ marginBottom: "1rem" }} className="container_header">
       <div className="header">

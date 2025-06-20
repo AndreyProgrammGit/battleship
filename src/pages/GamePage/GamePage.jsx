@@ -1,26 +1,21 @@
 import { useEffect, useState, useRef } from "react";
-import { ShipDock } from "../components/Ship/Ship.jsx";
-import Prompt from "../components/Prompt/Prompt.jsx";
-import { placeShip } from "./utils/placeShip.js";
-import { removeShipAt } from "./utils/removeShipAt.js";
-import GameBoard from "../components/GameBoard/GameBoard.jsx";
-import { setupSocketListeners } from "./utils/setupSocketListeners.js";
-import Header from "../components/Header/Header.jsx";
 import { useNavigate, useParams } from "react-router";
-import { randomlyPlaceShips } from "./utils/randomlyPlaceShips.js";
-
-const createEmptyBoard = () =>
-  Array(10)
-    .fill(null)
-    .map(() =>
-      Array(10)
-        .fill(null)
-        .map(() => ({
-          ship: false,
-          hit: false,
-          miss: false,
-        }))
-    );
+import { ToastContainer } from "react-toastify";
+import { ShipDock } from "../../components/Ship/Ship.jsx";
+import Prompt from "../../components/Prompt/Prompt.jsx";
+import GameBoard from "../../components/GameBoard/GameBoard.jsx";
+import Header from "../../components/Header/Header.jsx";
+import { placeShip } from "../utils/placeShip.js";
+import { removeShipAt } from "../utils/removeShipAt.js";
+import { setupSocketListeners } from "../utils/setupSocketListeners.js";
+import { randomlyPlaceShips } from "../utils/randomlyPlaceShips.js";
+import { createEmptyBoard } from "../utils/createEmptyBoard.js";
+import {
+  notifyEnterToRoom,
+  notifyUserEnterToRoom,
+  notifyUserLeaveFromRoom,
+} from "../utils/toastNotify.js";
+import "./GamePage.scss";
 
 const GamePage = ({ socket }) => {
   const [draggingShipData, setDraggingShipData] = useState(null);
@@ -68,30 +63,27 @@ const GamePage = ({ socket }) => {
     }
 
     socket.on("roomIsFull", ({ countUsersInRoom }) => {
-      console.log(countUsersInRoom);
       if (countUsersInRoom > 2) {
-        navigate("/rooms", { state: alert("Комната полная") });
+        navigate("/rooms", { state: { roomIsFull: true } });
       }
     });
   }, []);
 
   useEffect(() => {
     socket.on("userJoined", ({ user, userId }) => {
-      alert(`В комнату зашел ${user}`);
+      notifyUserEnterToRoom(user);
     });
 
     socket.on("userIsLeave", ({ message }) => {
-      alert(message);
+      notifyUserLeaveFromRoom(message);
     });
 
     socket.on("joinedRoom", ({ roomId }) => {
-      alert(`Вы вошли в комнату ${roomId}`);
+      notifyEnterToRoom(`Вы вошли в комнату ${roomId}`);
     });
   }, [socket]);
 
   useEffect(() => {
-    console.log("App useEffect");
-
     setupSocketListeners(
       socket,
       socketRef,
@@ -313,6 +305,8 @@ const GamePage = ({ socket }) => {
         </p>
       )}
       {isReady && opponentReady && <p>🔥 Оба игрока готовы! Игра началась.</p>}
+
+      <ToastContainer position="bottom-right" />
     </>
   );
 };

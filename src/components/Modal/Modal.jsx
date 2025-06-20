@@ -22,10 +22,6 @@ const Modal = ({ showModal, setShowModal }) => {
   const navigate = useNavigate();
   const modalContentRef = useRef(null);
 
-  useEffect(() => {
-    console.log("Show modal in child:", showModal);
-  }, [showModal]);
-
   return (
     <>
       <div

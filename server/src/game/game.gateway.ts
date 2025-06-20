@@ -16,14 +16,21 @@ interface PlayerState {
   ready: boolean;
 }
 
-interface PlyaerInRoom {
+interface PlayerInRoom {
   roomId: string;
   user: string;
   userId: string;
 }
 
+interface Rooms {
+  room: string;
+  owner: string;
+  name: string;
+  count: number;
+}
+
 let players: PlayerState[] = [];
-let rooms: { room: string; user: string; name: string }[] = [];
+let rooms: Rooms[] = [];
 let turnIndex = 0;
 
 @WebSocketGateway({
@@ -41,59 +48,88 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.clients.set(client.id, client);
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
     this.clients.delete(client.id);
-    const removedRooms = rooms.filter((r) => r.user === client.id);
-    for (const item of removedRooms) {
-      client.leave(item.room);
+
+    const roomToUpdate = rooms.find((room) => room.owner === client.id);
+    if (roomToUpdate) {
+      const socketsInRoom = await this.server
+        .in(roomToUpdate.room)
+        .fetchSockets();
+      roomToUpdate.count = socketsInRoom.length;
+      if (roomToUpdate.count === 0 || roomToUpdate.count === 2) {
+        // Удаляем комнату, если в ней 0 или 2 игрока
+        rooms = rooms.filter((room) => room.room !== roomToUpdate.room);
+      }
+      this.server.emit('sendAllRooms', this.getFilteredRooms()); // Обновляем всех клиентов
     }
-
-    client.broadcast.emit('userIsLeave', {
-      message: `${client.id} вышел из комнаты`,
-    });
-
-    removedRooms.forEach((item) => {
-      const index = rooms.findIndex((r) => r.user === item.user);
-      if (index !== -1) rooms.splice(index, 1);
-    });
 
     players = players.filter((p) => p.id !== client.id);
   }
 
+  private getFilteredRooms(): Rooms[] {
+    return rooms.filter((room) => room.count === 1);
+  }
+
   @SubscribeMessage('getRooms')
   sendRooms(@ConnectedSocket() client: Socket) {
-    client.emit('sendAllRooms', rooms);
+    client.emit('sendAllRooms', this.getFilteredRooms());
   }
 
   @SubscribeMessage('joinToRoom')
   async handleJoinToRoom(
-    @MessageBody() body: PlyaerInRoom,
+    @MessageBody() body: PlayerInRoom,
     @ConnectedSocket() client: Socket,
   ) {
     const { roomId, user, userId } = body;
     client.join(roomId);
+    const socketsInRoom = await this.server.in(roomId).fetchSockets();
 
-    if (!rooms.find((item) => item.room === roomId)) {
-      console.log('created room');
-      rooms.push({ room: roomId, user: client.id, name: user });
+    const exsitRoom = rooms.find((item) => item.room === roomId);
+
+    if (!exsitRoom) {
+      rooms.push({
+        room: roomId,
+        owner: client.id,
+        name: user,
+        count: 1,
+      });
+    } else {
+      exsitRoom.count = socketsInRoom.length;
     }
 
-    console.log('join room', rooms);
+    this.server.emit('sendAllRooms', this.getFilteredRooms());
 
     client.to(roomId).emit('userJoined', {
       user,
       userId,
     });
 
+    client.on('disconnect', async () => {
+      const disconnectedRoom = rooms.find((room) => room.room === roomId);
+      if (disconnectedRoom) {
+        const remainingSocketsInRoom = await this.server
+          .in(roomId)
+          .fetchSockets();
+        disconnectedRoom.count = remainingSocketsInRoom.length;
+
+        if (disconnectedRoom.count === 0 || disconnectedRoom.count === 2) {
+          rooms = rooms.filter((room) => room.room !== disconnectedRoom.room);
+        }
+        this.server.emit('sendAllRooms', this.getFilteredRooms());
+      }
+
+      client.to(roomId).emit('userIsLeave', {
+        message: `${user} вышел из комнаты`,
+      });
+    });
+
     client.emit('joinedRoom', { roomId });
 
-    const socketsInRoom = await this.server.in(roomId).fetchSockets();
-
-    if (socketsInRoom.length >= 2) {
-      const index = rooms.findIndex((i) => i.room === roomId);
-      if (index !== -1) rooms.splice(index, 1);
-    }
+    client.emit('checkCountUser', {
+      count: socketsInRoom.length,
+    });
 
     client.emit('roomIsFull', {
       countUsersInRoom: socketsInRoom.length,

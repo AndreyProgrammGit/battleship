@@ -53,9 +53,9 @@ p {
 }
 
 /* В GamePage.css или GameBoard.css */
-.random-placement-button {
+/* .random-placement-button {
   margin-top: 20px;
-  /* Отступ сверху */
+  Отступ сверху
   padding: 10px 20px;
   background-color: #007bff;
   color: white;
@@ -72,4 +72,4 @@ p {
 
 .random-placement-button:active {
   background-color: #004085;
-}
+} */
