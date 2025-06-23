@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import "./Header.scss";
 import logo from "../../assets/images/battleship_logo.png";
-import { Link, useNavigate } from "react-router";
 import Modal from "../Modal/Modal";
 
 const createEmptyBoard = () =>

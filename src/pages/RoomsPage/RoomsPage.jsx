@@ -3,7 +3,7 @@ import { uid } from "uid";
 import styles from "./RoomsPage.module.css";
 import { Link, useLocation, useNavigate } from "react-router";
 import { notifyRoomIsFull } from "../utils/toastNotify";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 
 const RoomsPage = ({ socket }) => {
   const [rooms, setRooms] = useState([]);

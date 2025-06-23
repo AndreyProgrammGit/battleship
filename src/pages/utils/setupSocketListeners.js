@@ -38,14 +38,11 @@ export const setupSocketListeners = (
       }
 
       if (isYourShot) {
-        // Ты стрелял - обновляем доску противника
         setOpponentBoard(board);
       } else {
-        // По тебе стреляли - обновляем свою доску
         setMyBoard(board);
       }
 
-      // Обновляем текущий ход
       setCurrentTurn(
         yourTurn
           ? playerRoleRef.current

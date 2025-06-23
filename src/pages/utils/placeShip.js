@@ -10,15 +10,20 @@ export const placeShip = (
   setShipsToPlace,
   setCurrentShipSize,
   setIsPlacing,
-  isOrientation
+  isOrientation,
+  isDraggingShip = false
 ) => {
   const shipSize = passedSize;
 
-  if (row === null || col === null) return;
-  if (!isPlacing || shipsToPlace[shipSize] <= 0) return;
+  if (row === null || col === null)
+    return { newBoard: myBoard, shipPlaced: false };
+  if (!isPlacing) return { newBoard: myBoard, shipPlaced: false };
+
+  if (!isDraggingShip && shipsToPlace[shipSize] <= 0)
+    return { newBoard: myBoard, shipPlaced: false };
 
   const canPlaceShip = (board, row, col, size, orientation) => {
-    const deltas = orientation === 'horizontal' ? [0, 1] : [1, 0];
+    const deltas = orientation === "horizontal" ? [0, 1] : [1, 0];
 
     for (let i = 0; i < size; i++) {
       const r = row + i * deltas[0];
@@ -31,13 +36,7 @@ export const placeShip = (
         for (let dc = -1; dc <= 1; dc++) {
           const nr = r + dr;
           const nc = c + dc;
-          if (
-            nr >= 0 &&
-            nr < 10 &&
-            nc >= 0 &&
-            nc < 10 &&
-            board[nr][nc].ship
-          ) {
+          if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10 && board[nr][nc].ship) {
             return false;
           }
         }
@@ -47,9 +46,10 @@ export const placeShip = (
     return true;
   };
 
-  if (!canPlaceShip(myBoard, row, col, shipSize, isOrientation)) return;
+  if (!canPlaceShip(myBoard, row, col, shipSize, isOrientation))
+    return { newBoard: myBoard, shipPlaced: false };
 
-  const deltas = isOrientation === 'horizontal' ? [0, 1] : [1, 0];
+  const deltas = isOrientation === "horizontal" ? [0, 1] : [1, 0];
   const updated = myBoard.map((r) => r.map((c) => ({ ...c })));
 
   for (let i = 0; i < shipSize; i++) {
@@ -60,20 +60,24 @@ export const placeShip = (
 
   setMyBoard(updated);
 
-  setShipsToPlace((prevShips) => {
-    const newShips = {
-      ...prevShips,
-      [shipSize]: prevShips[shipSize] - 1
-    };
+  if (!isDraggingShip) {
+    setShipsToPlace((prevShips) => {
+      const newShips = {
+        ...prevShips,
+        [shipSize]: prevShips[shipSize] - 1,
+      };
 
-    const nextSize = [4, 3, 2, 1].find((size) => newShips[size] > 0);
+      const nextSize = [4, 3, 2, 1].find((size) => newShips[size] > 0);
 
-    if (nextSize) {
-      setCurrentShipSize(nextSize);
-    } else {
-      setIsPlacing(false);
-    }
+      if (nextSize) {
+        setCurrentShipSize(nextSize);
+      } else {
+        setIsPlacing(false);
+      }
 
-    return newShips;
-  });
+      return newShips;
+    });
+  }
+
+  return { newBoard: updated, shipPlaced: true };
 };

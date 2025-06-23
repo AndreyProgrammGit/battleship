@@ -59,10 +59,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .fetchSockets();
       roomToUpdate.count = socketsInRoom.length;
       if (roomToUpdate.count === 0 || roomToUpdate.count === 2) {
-        // Удаляем комнату, если в ней 0 или 2 игрока
         rooms = rooms.filter((room) => room.room !== roomToUpdate.room);
       }
-      this.server.emit('sendAllRooms', this.getFilteredRooms()); // Обновляем всех клиентов
+      this.server.emit('sendAllRooms', this.getFilteredRooms());
     }
 
     players = players.filter((p) => p.id !== client.id);
@@ -192,7 +191,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (hit) {
       cell.hit = true;
 
-      // Отметка вокруг попадания (по желанию)
       const deltas = [-1, 0, 1];
       for (let dy of deltas) {
         for (let dx of deltas) {

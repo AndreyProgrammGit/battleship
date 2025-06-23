@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router";
 import { CSSTransition } from "react-transition-group";
 
@@ -12,9 +12,6 @@ const styleWrapper = {
   width: "100vw",
   height: "100vh",
   background: "rgba(0, 0, 0, 0.5)",
-  //   display: "flex",
-  //   alignItems: "center",
-  //   justifyContent: "center",
   zIndex: 1000,
 };
 

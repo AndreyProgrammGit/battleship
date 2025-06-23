@@ -104,13 +104,11 @@ const GamePage = ({ socket }) => {
 
   const handleOpponentCellClick = (row, col) => {
     console.log("handleOpponentCellClick", row, col);
-    // Проверяем, наш ли ход
     if (currentTurn !== playerRoleRef.current) {
       console.log("Не твой ход!");
       return;
     }
 
-    // Проверяем, не стреляли ли уже в эту клетку
     const cell = opponentBoard[row][col];
     if (cell.hit || cell.miss) {
       console.log("Уже стреляли в эту клетку!");
@@ -134,7 +132,7 @@ const GamePage = ({ socket }) => {
       const c = orientation === "horizontal" ? col + i : col;
 
       if (r >= 10 || c >= 10) {
-        setHoveredCells([]); // не помещается
+        setHoveredCells([]);
         setIsValidPlacement(false);
         return;
       }
@@ -146,17 +144,70 @@ const GamePage = ({ socket }) => {
     setIsValidPlacement(calculatedIsValidPlacement);
   };
 
-  const handleDragStartShip = (size, orientation) => {
-    setDraggingShipData({ size, orientation });
+  const handleDragStartShip = (
+    size,
+    orientation,
+    isExistingShip = false,
+    originalCells = []
+  ) => {
+    setDraggingShipData({ size, orientation, isExistingShip, originalCells });
   };
 
   const handleDragEndShip = () => {
     setDraggingShipData(null);
+    setHoveredCells([]);
+    setIsValidPlacement(null);
   };
 
-  // <--- НОВАЯ ФУНКЦИЯ ДЛЯ СЛУЧАЙНОЙ РАССТАНОВКИ --->
+  const handleShipDragStart = (size, orientation, originalCells) => {
+    setDraggingShipData({
+      size,
+      orientation,
+      isExistingShip: true,
+      originalCells,
+    });
+  };
+  const handleShipDrop = (newRow, newCol, size, orientation, originalCells) => {
+    let boardAfterRemoval = myBoard.map((row) =>
+      row.map((cell) => ({ ...cell }))
+    );
+    originalCells.forEach(([r, c]) => {
+      if (boardAfterRemoval[r] && boardAfterRemoval[r][c]) {
+        boardAfterRemoval[r][c].ship = false;
+      }
+    });
+
+    const { newBoard: boardAfterPlacement, shipPlaced } = placeShip(
+      newRow,
+      newCol,
+      boardAfterRemoval,
+      size,
+      orientation,
+      true,
+      shipsToPlace,
+      setMyBoard,
+      setShipsToPlace,
+      setCurrentShipSize,
+      setIsPlacing,
+      isOrientation,
+      true
+    );
+
+    if (shipPlaced) {
+      setMyBoard(boardAfterPlacement);
+      setShowPrompt(false);
+    } else {
+      setMyBoard(myBoard);
+      console.warn(
+        "Не удалось переместить корабль: новое место недействительно."
+      );
+    }
+    setDraggingShipData(null);
+    setHoveredCells([]);
+    setIsValidPlacement(null);
+  };
+
   const handleRandomPlacement = () => {
-    // Сбросить доску и список кораблей перед новой расстановкой
     setMyBoard(createEmptyBoard());
     setShipsToPlace({
       4: 1,
@@ -165,7 +216,6 @@ const GamePage = ({ socket }) => {
       1: 4,
     });
 
-    // Вызываем нашу новую функцию для случайной расстановки
     const { newBoard, updatedShipsToPlace } = randomlyPlaceShips({
       4: 1,
       3: 2,
@@ -175,10 +225,10 @@ const GamePage = ({ socket }) => {
 
     setMyBoard(newBoard);
     setShipsToPlace(updatedShipsToPlace);
-    setIsPlacing(false); // Предполагаем, что после случайной расстановки, фаза размещения завершена
-    setShowPrompt(false); // Убираем подсказку, так как корабли расставлены
+    setIsPlacing(false);
+    setShowPrompt(false);
   };
-  // <--- КОНЕЦ НОВОЙ ФУНКЦИИ --->
+
   return (
     <>
       <Header
@@ -200,7 +250,7 @@ const GamePage = ({ socket }) => {
         />
       </div>
 
-      {isPlacing && ( // Показываем кнопку только во время фазы размещения
+      {isPlacing && (
         <button
           onClick={handleRandomPlacement}
           className="random-placement-button"
@@ -231,6 +281,8 @@ const GamePage = ({ socket }) => {
             setIsValidPlacement={setIsValidPlacement}
             onHover={handleHover}
             draggingShipData={draggingShipData}
+            onShipDragStart={handleShipDragStart}
+            onShipDrop={handleShipDrop}
             onCellClick={(row, col, size, orientation) =>
               placeShip(
                 row,
@@ -244,7 +296,8 @@ const GamePage = ({ socket }) => {
                 setShipsToPlace,
                 setCurrentShipSize,
                 setIsPlacing,
-                isOrientation
+                isOrientation,
+                false
               )
             }
             onRightClick={(row, col) =>

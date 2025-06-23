@@ -1,46 +1,76 @@
-export const removeShipAt = (row, col , myBoard, setMyBoard, setShipsToPlace, setIsPlacing, setCurrentShipSize) => {
+export const removeShipAt = (
+  row,
+  col,
+  myBoard,
+  setMyBoard,
+  setShipsToPlace,
+  setIsPlacing,
+  setCurrentShipSize,
+  isTemporaryRemoval = false
+) => {
+  const cell = myBoard[row][col];
+  if (!cell.ship)
+    return {
+      boardAfterRemoval: myBoard,
+      shipRemoved: false,
+      removedShipSize: 0,
+    };
 
-    const cell = myBoard[row][col];
-    if (!cell.ship) return;
+  const directions = [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ];
 
-    // Обход всех направлений, чтобы найти весь корабль
-    const directions = [
-        [0, 1],  // горизонтально →
-        [1, 0],  // вертикально ↓
-        [0, -1], // ←
-        [-1, 0], // ↑
-    ];
+  let shipCells = [{ row, col }];
+  const visited = new Set();
+  visited.add(`${row}-${col}`);
 
-    let shipCells = [{ row, col }];
+  const queue = [{ r: row, c: col }];
+  while (queue.length > 0) {
+    const { r, c } = queue.shift();
 
     for (const [dr, dc] of directions) {
-        let r = row + dr;
-        let c = col + dc;
-
-        while (r >= 0 && r < 10 && c >= 0 && c < 10 && myBoard[r][c].ship) {
-            shipCells.push({ row: r, col: c });
-            r += dr;
-            c += dc;
-        }
+      let nr = r + dr;
+      let nc = c + dc;
+      if (
+        nr >= 0 &&
+        nr < 10 &&
+        nc >= 0 &&
+        nc < 10 &&
+        myBoard[nr][nc].ship &&
+        !visited.has(`${nr}-${nc}`)
+      ) {
+        visited.add(`${nr}-${nc}`);
+        shipCells.push({ row: nr, col: nc });
+        queue.push({ r: nr, c: nc });
+      }
     }
+  }
 
-    // Удаляем корабль
-    const updated = myBoard.map((r) => r.map((c) => ({ ...c })));
+  const updated = myBoard.map((r) => r.map((c) => ({ ...c })));
 
-    shipCells.forEach(({ row, col }) => {
-        updated[row][col].ship = false;
-    });
+  shipCells.forEach(({ row, col }) => {
+    updated[row][col].ship = false;
+  });
 
-    setMyBoard(updated);
+  setMyBoard(updated);
 
-    // Обновляем счётчик кораблей
-    const shipSize = shipCells.length;
+  const shipSize = shipCells.length;
+  if (!isTemporaryRemoval) {
     setShipsToPlace((prev) => ({
-        ...prev,
-        [shipSize]: prev[shipSize] + 1,
+      ...prev,
+      [shipSize]: prev[shipSize] + 1,
     }));
 
-    // Если закончили расставлять — включаем режим расстановки снова
     setIsPlacing(true);
     setCurrentShipSize(shipSize);
+  }
+  return {
+    boardAfterRemoval: updated,
+    shipRemoved: true,
+    removedShipSize: shipSize,
+    removedShipCells: shipCells,
+  };
 };
