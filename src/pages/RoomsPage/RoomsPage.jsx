@@ -41,6 +41,12 @@ const RoomsPage = ({ socket }) => {
 
   return (
     <div className={styles.wrapper}>
+      <div className={styles.back}>
+        <Link className={styles.linkToHome} to={"/"}>
+          &#9668;{" "}
+          <span className={styles.linkText}>Вернуться на главную страницу</span>
+        </Link>
+      </div>
       <div className={styles.container}>
         <h1 className={styles.title}>
           Добро пожаловать на страницу с комнатами

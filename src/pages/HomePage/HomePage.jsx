@@ -27,7 +27,7 @@ const HomePage = () => {
         {localStorage.getItem("user") ? (
           <div>
             <div>
-              <p style={{ color: "#D9D9D9" }}>Вы уже ввели имя пользователя</p>
+              <p style={{ color: "#D9D9D9" }}>{localStorage.getItem("user")}</p>
               <button
                 type="button"
                 onClick={(e) => {

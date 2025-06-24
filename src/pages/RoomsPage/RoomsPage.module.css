@@ -33,6 +33,27 @@
     padding: 0;
 }
 
+.back {
+    position: fixed;
+    top: 25px;
+    left: 25px;
+
+}
+
+.linkToHome {
+    color: #d9d9d9;
+    text-decoration: none;
+    transition: color 0.2s ease-in
+}
+
+.linkToHome:hover {
+    color: #759add;
+}
+
+.linkText {
+    text-decoration: underline;
+}
+
 .listItem {
     list-style-type: none;
     width: 250px;

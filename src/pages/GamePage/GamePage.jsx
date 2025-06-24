@@ -272,6 +272,7 @@ const GamePage = ({ socket }) => {
         <div>
           <h2>🛡️ Моя доска</h2>
           <GameBoard
+            isReady={isReady}
             board={myBoard}
             isOpponent={false}
             setShowPrompt={setShowPrompt}
