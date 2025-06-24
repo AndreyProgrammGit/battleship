@@ -8,6 +8,16 @@
   gap: 2px;
 }
 
+
+h2 {
+  color: #D9D9D9;
+}
+
+p {
+  color: #D9D9D9
+}
+
+
 .cell {
   width: 30px;
   height: 30px;
@@ -25,17 +35,17 @@
 }
 
 .cell.miss {
-  background-color: lightblue;
+  background-color: grey;
 }
 
 .cell.near-hit {
-  background-color:grey;
+  background-color: grey;
 }
 
 .valid-hover {
-  background-color: rgba(0, 255, 0, 0.3); /* зелёная подсветка */
+  background-color: rgba(0, 255, 0, 0.3);
 }
 
 .invalid-hover {
-  background-color: rgba(255, 0, 0, 0.3); /* красная подсветка */
+  background-color: rgba(255, 0, 0, 0.3);
 }

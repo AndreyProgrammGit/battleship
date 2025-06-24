@@ -1,6 +1,9 @@
-import './GameBoard.css';
+import "./GameBoard.css";
+import { checkPlacementValidity } from "../../utils/checkPlacementValidity";
+import { getShipInfoAt } from "./utils/getShipInfoAt";
 
 export default function GameBoard({
+  isReady,
   board,
   onCellClick,
   isOpponent,
@@ -8,66 +11,29 @@ export default function GameBoard({
   setShowPrompt,
   hoveredCells = [],
   isValidPlacement = null,
-  setHoveredCells = () => { },
-  setIsValidPlacement = () => { },
+  setHoveredCells = () => {},
+  setIsValidPlacement = () => {},
   onHover,
-  draggingShipData
+  draggingShipData,
+  onShipDragStart,
+  onShipDrop,
 }) {
-
   const handleDragLeave = () => {
     setHoveredCells([]);
     setIsValidPlacement(null);
   };
 
-
-  const checkPlacementValidity = (startRow, startCol, shipSize, orientation, currentBoard) => {
-    const boardRows = currentBoard.length;
-    const boardCols = currentBoard[0].length;
-
-    for (let i = 0; i < shipSize; i++) {
-      const r = orientation === 'horizontal' ? startRow : startRow + i;
-      const c = orientation === 'horizontal' ? startCol + i : startCol;
-
-      if (r >= boardRows || c >= boardCols || r < 0 || c < 0) {
-        return false;
-      }
-    }
-
-    for (let i = 0; i < shipSize; i++) {
-      const shipPartR = orientation === 'horizontal' ? startRow : startRow + i;
-      const shipPartC = orientation === 'horizontal' ? startCol + i : startCol;
-
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          const checkR = shipPartR + dr;
-          const checkC = shipPartC + dc;
-
-          if (checkR >= 0 && checkR < boardRows && checkC >= 0 && checkC < boardCols) {
-            if (currentBoard[checkR][checkC].ship) {
-              return false;
-            }
-          }
-        }
-      }
-    }
-
-    return true;
-  };
-
   const handleDragOverInternal = (e, draggingShipData, rowIndex, colIndex) => {
     e.preventDefault();
-    const { size, orientation } = draggingShipData
-
-
+    const { size, orientation, isExistingShip } = draggingShipData;
     const shipSize = parseInt(size);
     const shipOrientation = orientation;
 
     if (!isNaN(shipSize) && shipOrientation && !isOpponent) {
-
       const currentHoveredCells = [];
       let calculatedIsValidPlacement = true;
 
-      if (shipOrientation === 'horizontal') {
+      if (shipOrientation === "horizontal") {
         for (let i = 0; i < shipSize; i++) {
           currentHoveredCells.push([rowIndex, colIndex + i]);
         }
@@ -77,26 +43,42 @@ export default function GameBoard({
         }
       }
 
+      let tempBoard = board;
+      if (isExistingShip && draggingShipData.originalCells) {
+        tempBoard = board.map((row) => row.map((cell) => ({ ...cell })));
+        draggingShipData.originalCells.forEach(([r, c]) => {
+          if (tempBoard[r] && tempBoard[r][c]) {
+            tempBoard[r][c].ship = false;
+          }
+        });
+      }
+
       calculatedIsValidPlacement = checkPlacementValidity(
         rowIndex,
         colIndex,
         shipSize,
         shipOrientation,
-        board
+        tempBoard
       );
 
       setHoveredCells(currentHoveredCells);
       setIsValidPlacement(calculatedIsValidPlacement);
 
       if (onHover) {
-        onHover(rowIndex, colIndex, shipSize, shipOrientation, calculatedIsValidPlacement, currentHoveredCells);
+        onHover(
+          rowIndex,
+          colIndex,
+          shipSize,
+          shipOrientation,
+          calculatedIsValidPlacement,
+          currentHoveredCells
+        );
       }
     } else {
       setHoveredCells([]);
       setIsValidPlacement(null);
     }
   };
-
 
   return (
     <div className="board">
@@ -109,44 +91,117 @@ export default function GameBoard({
           );
 
           const className = `cell
-            ${cell.hit ? 'hit' : ''}
-            ${cell.miss ? 'miss' : ''}
-            ${cell.ship && !isOpponent ? 'ship' : ''}
-            ${cell.nearHit ? 'near-hit' : ''}
-            ${isHovered ? (isValidPlacement ? 'valid-hover' : 'invalid-hover') : ''}
+            ${cell.hit ? "hit" : ""}
+            ${cell.miss ? "miss" : ""}
+            ${cell.ship && !isOpponent ? "ship" : ""}
+            ${cell.nearHit ? "near-hit" : ""}
+            ${
+              isHovered
+                ? isValidPlacement
+                  ? "valid-hover"
+                  : "invalid-hover"
+                : ""
+            }
           `;
           return (
-              <div
-                key={key}
-                className={className}
-                onClick={() => {
+            <div
+              key={key}
+              className={className}
+              onClick={() => {
+                if (!draggingShipData) {
                   onCellClick(rowIndex, colIndex);
                   if (!isOpponent) setShowPrompt(false);
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
+                }
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (!isReady) {
                   onRightClick(rowIndex, colIndex);
-                }}
-                onDragOver={(e) => handleDragOverInternal(e, draggingShipData, rowIndex, colIndex)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => {
-                  const size = parseInt(e.dataTransfer.getData('shipSize'));
-                  const orientation = e.dataTransfer.getData('orientation');
-                  if (!isOpponent && !isNaN(size) && orientation) {
-
-                    const finalIsValidPlacement = checkPlacementValidity(rowIndex, colIndex, size, orientation, board);
-
-                    if (finalIsValidPlacement) {
-                      onCellClick(rowIndex, colIndex, size, orientation);
-                      setShowPrompt(false);
-                    } else {
-                      console.warn("Невозможно разместить корабль здесь: нарушение правил касания.");
-                    }
-                    setHoveredCells([]);
-                    setIsValidPlacement(null);
+                }
+              }}
+              onDragOver={(e) =>
+                handleDragOverInternal(e, draggingShipData, rowIndex, colIndex)
+              }
+              onDragLeave={handleDragLeave}
+              draggable={cell.ship && !isOpponent}
+              onDragStart={(e) => {
+                if (cell.ship && !isOpponent) {
+                  const shipInfo = getShipInfoAt(board, rowIndex, colIndex);
+                  if (shipInfo) {
+                    e.dataTransfer.setData("shipSize", shipInfo.size);
+                    e.dataTransfer.setData("orientation", shipInfo.orientation);
+                    e.dataTransfer.setData("isExistingShip", "true");
+                    e.dataTransfer.setData(
+                      "originalCells",
+                      JSON.stringify(shipInfo.cells)
+                    );
+                    onShipDragStart(
+                      shipInfo.size,
+                      shipInfo.orientation,
+                      shipInfo.cells
+                    );
                   }
-                }}
-              />
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const size = parseInt(e.dataTransfer.getData("shipSize"));
+                const orientation = e.dataTransfer.getData("orientation");
+                const isExistingShip =
+                  e.dataTransfer.getData("isExistingShip") === "true";
+                const originalCellsData =
+                  e.dataTransfer.getData("originalCells");
+                const originalCells = originalCellsData
+                  ? JSON.parse(originalCellsData)
+                  : [];
+
+                if (!isOpponent && !isNaN(size) && orientation) {
+                  let tempBoardForDropCheck = board;
+                  if (isExistingShip) {
+                    tempBoardForDropCheck = board.map((row) =>
+                      row.map((cell) => ({ ...cell }))
+                    );
+                    originalCells.forEach(([r, c]) => {
+                      if (
+                        tempBoardForDropCheck[r] &&
+                        tempBoardForDropCheck[r][c]
+                      ) {
+                        tempBoardForDropCheck[r][c].ship = false;
+                      }
+                    });
+                  }
+
+                  const finalIsValidPlacement = checkPlacementValidity(
+                    rowIndex,
+                    colIndex,
+                    size,
+                    orientation,
+                    tempBoardForDropCheck
+                  );
+
+                  if (finalIsValidPlacement) {
+                    if (isExistingShip) {
+                      onShipDrop(
+                        rowIndex,
+                        colIndex,
+                        size,
+                        orientation,
+                        originalCells
+                      );
+                    } else {
+                      onCellClick(rowIndex, colIndex, size, orientation);
+                    }
+                    setShowPrompt(false);
+                  } else {
+                    console.warn(
+                      "Невозможно разместить корабль здесь: нарушение правил касания или выход за границы."
+                    );
+                  }
+                  setHoveredCells([]);
+                  setIsValidPlacement(null);
+                }
+              }}
+            />
           );
         })
       )}
